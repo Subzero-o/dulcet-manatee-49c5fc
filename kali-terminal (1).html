@@ -173,10 +173,9 @@
       <button class="pill" onclick="pillCmd('whoami')">whoami</button>
       <button class="pill" onclick="pillCmd('cat credentials.txt')">cat creds</button>
       <button class="pill" onclick="pillCmd('ls')">ls</button>
-      <button class="pill" onclick="pillCmd('curl -v http://target.local')">curl</button>
-      <button class="pill" onclick="pillCmd('curl -I http://target.local')">curl -I</button>
-      <button class="pill" onclick="pillCmd('curl http://target.local/robots.txt')">curl robots</button>
-      <button class="pill" onclick="pillCmd('wget http://target.local/file.php')">wget</button>
+      <button class="pill" onclick="pillCmd('nano notes.md')">nano</button>
+      <button class="pill" onclick="pillCmd('vim pentest_notes.txt')">vim</button>
+      <button class="pill" onclick="pillCmd('mkdir loot')">mkdir</button>
     </div>
     <div id="action-row">
       <button class="act" onclick="histUp()">▲</button>
@@ -242,7 +241,7 @@ function doBackspace(){
   const inp = getInp();
   if(inp){ inp.value = virtBuf; inp.focus(); }
 }
-function doEnter(){ commitCommand(virtBuf.trim()); virtBuf = ''; }
+function doEnter(){ const c = virtBuf.trim(); virtBuf = ''; commitCommand(c); }
 function doCtrlC(){
   appendPromptLine(virtBuf+'^C', msfActive);
   virtBuf = ''; addSpacer();
@@ -365,12 +364,20 @@ function handleKey(e){
 
 /* ── FILESYSTEM ── */
 const fs = {
-  '~':['Desktop','Documents','Downloads','Music','Pictures','Videos','tools'],
+  '~':['Desktop','Documents','Downloads','Music','Pictures','Videos','tools','.bash_history','README.txt'],
   '~/Desktop':['target.txt','notes.md'],
-  '~/Documents':['report.pdf','credentials.txt','pentest_notes.txt'],
-  '~/Downloads':['nmap-7.94.tar.gz','exploit.py','wordlist.txt'],
-  '~/tools':['metasploit','burpsuite','sqlmap','hydra'],
+  '~/Documents':['report.pdf','credentials.txt','pentest_notes.txt','rules_of_engagement.txt','network_diagram.txt'],
+  '~/Downloads':['nmap-7.94.tar.gz','exploit.py','wordlist.txt','hashes.txt','backup.zip'],
+  '~/tools':['metasploit','burpsuite','sqlmap','hydra','wordlists','scripts'],
   '~/tools/metasploit':['msfconsole','msfvenom','modules'],
+  '~/tools/wordlists':['rockyou.txt','common.txt'],
+  '~/tools/scripts':['auto_recon.sh','privesc_check.py'],
+};
+const fileSizes = {
+  'report.pdf':'842K','credentials.txt':'118','pentest_notes.txt':'214','rules_of_engagement.txt':'356',
+  'network_diagram.txt':'289','nmap-7.94.tar.gz':'11M','exploit.py':'1.8K','wordlist.txt':'62',
+  'hashes.txt':'176','backup.zip':'4.2M','target.txt':'13','notes.md':'88','.bash_history':'412',
+  'README.txt':'301','rockyou.txt':'139M','common.txt':'982K','auto_recon.sh':'1.1K','privesc_check.py':'2.3K',
 };
 
 /* ── COMMANDS ── */
@@ -382,19 +389,22 @@ const cmds = {
     {t:'  ── System ──────────────────────────────────',c:'yellow'},
     {t:'  whoami  id  hostname  uname -a  date',c:''},
     {t:'  ifconfig  netstat  ps  w  uptime',c:''},
-    {t:'  ls  cd  pwd  cat  echo  clear  history',c:''},{t:'',c:''},
+    {t:'  ls  cd  pwd  cat  echo  clear  history',c:''},
+    {t:'  nano/vim <file>  mkdir  touch  rm  cp  mv',c:''},
+    {t:'  head  tail  less  wc  grep  find  chmod  man',c:''},
+    {t:'  df  du  free  top  which  env  kill  su  sudo',c:''},
+    {t:'  ping  curl  wget  ssh  dig  whois  ip a',c:''},
+    {t:'  base64  md5sum  sha256sum  file  diff  sort',c:''},{t:'',c:''},
     {t:'  ── Recon & Scanning ─────────────────────────',c:'yellow'},
     {t:'  nmap <target> [-sV] [-sC] [-A] [-O]',c:''},
     {t:'  nikto -h <target> [-p PORT]',c:''},
     {t:'  enum4linux <target>',c:''},
     {t:'  searchsploit <term>',c:''},{t:'',c:''},
-    {t:'  ── Web Enumeration & Transfer ──────────────────',c:'yellow'},
+    {t:'  ── Web Enumeration ──────────────────────────',c:'yellow'},
     {t:'  gobuster dir -u URL -w WORDLIST [-x ext]',c:''},
     {t:'  dirb URL [WORDLIST]',c:''},
     {t:'  wpscan --url URL [--enumerate u,p,t]',c:''},
-    {t:'  sqlmap -u URL [--dbs][--tables][--dump]',c:''},
-    {t:'  curl URL [-v][-I][-X POST][-d DATA][-H HDR]',c:''},
-    {t:'  wget URL [-O FILE] [-q] [-r]',c:''},{t:'',c:''},
+    {t:'  sqlmap -u URL [--dbs][--tables][--dump]',c:''},{t:'',c:''},
     {t:'  ── Exploitation ─────────────────────────────',c:'yellow'},
     {t:'  msfconsole  (use/set/show options/run/back)',c:''},
     {t:'  msfvenom -p PAYLOAD LHOST=IP LPORT=P -f FMT',c:''},
@@ -439,6 +449,16 @@ const cmds = {
       'notes.md':[{t:'# Notes',c:'cyan'},{t:'- Run nmap on target subnet',c:''},{t:'- Check for open SMB ports',c:''}],
       'target.txt':[{t:'10.10.10.55',c:''}],
       'wordlist.txt':[{t:'admin',c:''},{t:'password',c:''},{t:'root',c:''},{t:'123456',c:''},{t:'toor',c:''}],
+      'rules_of_engagement.txt':[{t:'=== Rules of Engagement ===',c:'cyan'},{t:'Client: Acme Corp',c:''},{t:'Scope: 192.168.1.0/24, *.acme-internal.test',c:''},{t:'Excluded: 192.168.1.1 (prod gateway)',c:'red'},{t:'Window: Mon-Fri 09:00-18:00',c:''},{t:'Authorized by: J. Reyes, CISO',c:''}],
+      'network_diagram.txt':[{t:'[Internet] --- [FW 192.168.1.1] --- [Switch]',c:''},{t:'                                   |-- 192.168.1.42 (Kali)',c:'green'},{t:'                                   |-- 192.168.1.55 (Web/SMB target)',c:''},{t:'                                   |-- 192.168.1.60 (DC01)',c:''}],
+      'hashes.txt':[{t:'admin:5f4dcc3b5aa765d61d8327deb882cf99',c:''},{t:'root:e10adc3949ba59abbe56e057f20f883e',c:''},{t:'user:25f9e794323b453885f5181f1b624d0b',c:''}],
+      '.bash_history':[{t:'nmap -sV 192.168.1.55',c:'dim'},{t:'gobuster dir -u http://192.168.1.55 -w /usr/share/wordlists/dirb/common.txt',c:'dim'},{t:'msfconsole',c:'dim'},{t:'cat credentials.txt',c:'dim'}],
+      'README.txt':[{t:'Kali Sim Pro — practice environment',c:'cyan'},{t:'All targets, creds and output on this box are simulated.',c:''},{t:'Use `help` to list commands.',c:''}],
+      'exploit.py':[{t:'#!/usr/bin/env python3',c:'dim'},{t:'# PoC — simulated, does not touch the network',c:'dim'},{t:'import socket',c:''},{t:'target = "192.168.1.55"',c:''},{t:'print(f"[*] would connect to {target}:445")',c:''}],
+      'auto_recon.sh':[{t:'#!/bin/bash',c:'dim'},{t:'nmap -sV -oA recon $1',c:''},{t:'gobuster dir -u http://$1 -w common.txt',c:''}],
+      'privesc_check.py':[{t:'#!/usr/bin/env python3',c:'dim'},{t:'# checks for common misconfigs (simulated)',c:'dim'},{t:'print("[*] checking sudo -l, SUID binaries, cron jobs...")',c:''}],
+      'rockyou.txt':[{t:'123456',c:''},{t:'password',c:''},{t:'12345678',c:''},{t:'qwerty',c:''},{t:'letmein',c:''},{t:'(14,344,391 lines total)',c:'dim'}],
+      'common.txt':[{t:'admin',c:''},{t:'login',c:''},{t:'wp-admin',c:''},{t:'backup',c:''},{t:'uploads',c:''},{t:'(4,614 lines total)',c:'dim'}],
     };
     if(files[a[0]]) return files[a[0]];
     if((fs[cwd]||[]).includes(a[0])) return [{t:'(binary or empty file)',c:'dim'}];
@@ -446,6 +466,57 @@ const cmds = {
   },
   echo:(a)=>[{t:a.join(' '),c:''}],
   clear:()=>{outputEl.innerHTML='';return[];},
+
+  nano:(a)=>cmds._editor('GNU nano 7.2',a,' [ Read 999 lines ]',' ^G Help  ^O Write Out  ^W Where Is  ^X Exit '),
+  vim:(a)=>cmds._editor('vim — VISUAL',a,'-- SIMULATED VIEW --',' :w write   :q quit   /pattern search '),
+  vi:(a)=>cmds.vim(a),
+  _editor:(label,a,tag,footer)=>{
+    if(!a[0]) return [{t:`Usage: ${label.split(' ')[0]} <file>`,c:'red'}];
+    const body = cmds.cat(a);
+    const top = {t:`  ${label}                        ${a[0]}${tag.includes('Read')?tag:''}`,c:'blue'};
+    const bottom = [{t:'',c:''},{t:tag.includes('Read')?'':tag,c:'dim'},{t:footer,c:'yellow'}];
+    return [top,...body,...bottom.filter(l=>l.t)];
+  },
+
+  mkdir:(a)=>{ if(!a[0]) return [{t:'mkdir: missing operand',c:'red'}]; (fs[cwd]=fs[cwd]||[]).push(a[0]); return []; },
+  touch:(a)=>{ if(!a[0]) return [{t:'touch: missing operand',c:'red'}]; (fs[cwd]=fs[cwd]||[]).push(a[0]); return []; },
+  rm:(a)=>{ if(!a[0]) return [{t:'rm: missing operand',c:'red'}]; fs[cwd]=(fs[cwd]||[]).filter(x=>x!==a[0]); return []; },
+  cp:(a)=>a.length<2?[{t:'cp: missing file operand',c:'red'}]:[],
+  mv:(a)=>a.length<2?[{t:'mv: missing file operand',c:'red'}]:[],
+  head:(a)=>cmds.cat(a).slice(0,10),
+  tail:(a)=>cmds.cat(a).slice(-10),
+  less:(a)=>cmds.cat(a),
+  more:(a)=>cmds.cat(a),
+  wc:(a)=>{ const f=a.filter(x=>!x.startsWith('-'))[0]; const n=f?(fileSizes[f]?Math.ceil(parseInt(fileSizes[f])/8):1):0; return [{t:`  ${n}  ${n*3}  ${fileSizes[f]||0} ${f||''}`,c:''}]; },
+  grep:(a)=>{ if(a.length<2) return [{t:'Usage: grep PATTERN FILE',c:'red'}]; const pat=a[0]; return cmds.cat([a[1]]).filter(l=>l.t.toLowerCase().includes(pat.toLowerCase())); },
+  find:(a)=>{ const all=Object.entries(fs).flatMap(([d,es])=>es.map(e=>`${d}/${e}`)); return all.slice(0,15).map(t=>({t,c:''})); },
+  chmod:(a)=>[],
+  man:(a)=>a[0]?[{t:`${a[0].toUpperCase()}(1)`,c:'cyan'},{t:`       ${a[0]} — simulated manual page`,c:''},{t:'       See `help` for the command reference.',c:'dim'}]:[{t:'What manual page do you want?',c:'red'}],
+  df:()=>[{t:'Filesystem     1K-blocks     Used Available Use% Mounted on',c:'cyan'},{t:'/dev/sda1       61876224 18234112  40532112  32% /',c:''}],
+  du:()=>[{t:'4.0K\t./Desktop',c:''},{t:'842K\t./Documents',c:''},{t:'15M\t./Downloads',c:''}],
+  free:()=>[{t:'               total        used        free',c:'cyan'},{t:'Mem:         8161788     2114320     3882156',c:''},{t:'Swap:        2097148           0     2097148',c:''}],
+  top:()=>cmds.ps(),
+  which:(a)=>a[0]?[{t:`/usr/bin/${a[0]}`,c:''}]:[],
+  env:()=>[{t:'SHELL=/bin/bash',c:''},{t:'USER=root',c:''},{t:'HOME=/root',c:''},{t:'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin',c:''}],
+  ping:(a)=>{ const t=a[0]||'192.168.1.1'; return [{t:`PING ${t} 56(84) bytes of data.`,c:''},{t:`64 bytes from ${t}: icmp_seq=1 ttl=64 time=0.38 ms`,c:'green'},{t:`64 bytes from ${t}: icmp_seq=2 ttl=64 time=0.41 ms`,c:'green'},{t:`--- ${t} ping statistics ---`,c:'dim'},{t:'2 packets transmitted, 2 received, 0% packet loss',c:'dim'}]; },
+  curl:(a)=>[{t:`<!DOCTYPE html><html><!-- response from ${a[0]||'target'} (simulated) --></html>`,c:'dim'}],
+  wget:(a)=>[{t:`Saving to: '${(a[0]||'index.html').split('/').pop()}'`,c:''},{t:'100%[======================>]  simulated',c:'green'}],
+  ssh:(a)=>[{t:`ssh: connecting to ${a[0]||'target'}...`,c:'dim'},{t:'Permission denied (publickey,password).',c:'red'}],
+  dig:(a)=>[{t:`;; ANSWER SECTION:`,c:'cyan'},{t:`${a[0]||'target'}.    300  IN  A  192.168.1.55`,c:''}],
+  whois:(a)=>[{t:`Domain Name: ${a[0]||'target'}`,c:''},{t:'Registrar: (simulated data)',c:'dim'}],
+  base64:(a)=>[{t:'U2ltdWxhdGVkIG91dHB1dA==',c:''}],
+  md5sum:(a)=>[{t:`5f4dcc3b5aa765d61d8327deb882cf99  ${a[0]||''}`,c:''}],
+  sha256sum:(a)=>[{t:`9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08  ${a[0]||''}`,c:''}],
+  file:(a)=>[{t:`${a[0]||''}: ASCII text`,c:''}],
+  diff:(a)=>[{t:'(files identical — simulated)',c:'dim'}],
+  sort:(a)=>cmds.cat(a).sort((x,y)=>x.t.localeCompare(y.t)),
+  uniq:(a)=>cmds.cat(a),
+  kill:(a)=>[{t:`Terminated process ${a[0]||''}`,c:'yellow'}],
+  su:(a)=>[{t:'su: already root',c:'dim'}],
+  sudo:(a)=>cmds[a[0]]?cmds[a[0]](a.slice(1)):[{t:`sudo: ${a[0]||''}: command not found`,c:'red'}],
+  apt:(a)=>a[0]==='update'?[{t:'Reading package lists... Done',c:'dim'},{t:'All packages are up to date.',c:'green'}]:[{t:`Reading package lists... Done`,c:'dim'}],
+  systemctl:(a)=>[{t:`● ${a[1]||'ssh'}.service - active (running)`,c:'green'}],
+  ip:(a)=>a[0]==='a'?cmds.ifconfig():[{t:'Usage: ip a',c:'red'}],
   history:()=>cmdHist.map((h,i)=>({t:`  ${String(i+1).padStart(3)}  ${h}`,c:''})),
   ifconfig:()=>[
     {t:'eth0: flags=4163<UP,BROADCAST,RUNNING>  mtu 1500',c:'yellow'},
@@ -473,20 +544,36 @@ const cmds = {
   nmap:(a)=>{
     const tgt=a.find(x=>!x.startsWith('-'))||'192.168.1.1';
     const agg=a.includes('-A'), sv=a.includes('-sV')||agg, sc=a.includes('-sC')||agg, os=a.includes('-O')||agg;
+    const allPorts=[
+      {p:21,svc:'ftp',ver:'vsftpd 3.0.3'},
+      {p:22,svc:'ssh',ver:'OpenSSH 8.9p1 Ubuntu'},
+      {p:80,svc:'http',ver:'Apache httpd 2.4.54'},
+      {p:139,svc:'netbios-ssn',ver:'Samba smbd 4.6.2'},
+      {p:443,svc:'https',ver:'Apache httpd 2.4.54'},
+      {p:445,svc:'microsoft-ds',ver:'Samba smbd 4.6.2'},
+      {p:3306,svc:'mysql',ver:'',filtered:true},
+      {p:8080,svc:'http-proxy',ver:'Squid 5.7'},
+    ];
+    const pFlag=a.find(x=>/^-p\S+$/.test(x));
+    const pSep=a.indexOf('-p');
+    const portSpec = pFlag ? pFlag.slice(2) : (pSep>=0 ? a[pSep+1] : null);
+    const inSpec=(spec,port)=>spec.split(',').some(part=>{
+      if(part==='-') return true;
+      if(part.includes('-')){ const [s,e]=part.split('-').map(Number); return port>=s&&port<=e; }
+      return Number(part)===port;
+    });
+    const ports = portSpec ? allPorts.filter(x=>inSpec(portSpec,x.p)) : allPorts;
     const r=[
       {t:`Starting Nmap 7.94 at ${new Date().toLocaleString()}`,c:'dim'},
       {t:`Nmap scan report for ${tgt}`,c:'yellow'},{t:'Host is up (0.00043s latency).',c:''},{t:'',c:''},
-      {t:'PORT      STATE    SERVICE      VERSION',c:'cyan'},
-      {t:'21/tcp    open     ftp          vsftpd 3.0.3',c:'green'},
-      {t:'22/tcp    open     ssh          OpenSSH 8.9p1 Ubuntu',c:'green'},
-      {t:'80/tcp    open     http         Apache httpd 2.4.54',c:'green'},
-      {t:'139/tcp   open     netbios-ssn  Samba smbd 4.6.2',c:'green'},
-      {t:'443/tcp   open     https        Apache httpd 2.4.54',c:'green'},
-      {t:'445/tcp   open     microsoft-ds Samba smbd 4.6.2',c:'green'},
-      {t:'3306/tcp  filtered mysql',c:'yellow'},
-      {t:'8080/tcp  open     http-proxy   Squid 5.7',c:'green'},
     ];
-    if(sc) r.push({t:'',c:''},{t:'| smb-vuln-ms17-010: VULNERABLE',c:'red'},{t:'|   CVE: CVE-2017-0143   Risk: HIGH',c:'red'});
+    if(ports.length){
+      r.push({t:'PORT      STATE    SERVICE      VERSION',c:'cyan'});
+      ports.forEach(x=>r.push({t:`${(x.p+'/tcp').padEnd(10)}${(x.filtered?'filtered':'open').padEnd(9)}${x.svc.padEnd(13)}${x.ver}`,c:x.filtered?'yellow':'green'}));
+    } else {
+      r.push({t:`Not shown: ${portSpec?'1 closed port':'992 closed ports'}`,c:'dim'});
+    }
+    if(sc && ports.find(x=>x.p===445)) r.push({t:'',c:''},{t:'| smb-vuln-ms17-010: VULNERABLE',c:'red'},{t:'|   CVE: CVE-2017-0143   Risk: HIGH',c:'red'});
     if(os) r.push({t:'',c:''},{t:'OS guess: Linux 5.x (95%), Ubuntu 20.04 (91%)',c:''});
     r.push({t:'',c:''},{t:`Nmap done: 1 IP (1 host up) scanned in ${(Math.random()*4+1).toFixed(2)}s`,c:'dim'});
     return r;
@@ -558,181 +645,6 @@ const cmds = {
     );
     r.push({t:`[*] Done @ ${new Date().toLocaleString()}`,c:'dim'});
     return r;
-  },
-
-  curl:(a)=>{
-    if(!a.length) return [
-      {t:'curl — transfer data from/to a server',c:'yellow'},
-      {t:'Usage: curl [OPTIONS] URL',c:''},
-      {t:'  -I          HEAD request (headers only)',c:'dim'},
-      {t:'  -i          include response headers',c:'dim'},
-      {t:'  -v          verbose (show request + response)',c:'dim'},
-      {t:'  -X METHOD   HTTP method (GET POST PUT DELETE)',c:'dim'},
-      {t:'  -d DATA     POST data',c:'dim'},
-      {t:'  -H HEADER   add custom header',c:'dim'},
-      {t:'  -u USER:PW  basic auth',c:'dim'},
-      {t:'  -o FILE     write output to file',c:'dim'},
-      {t:'  -s          silent mode',c:'dim'},
-      {t:'  -L          follow redirects',c:'dim'},
-    ];
-    const url    = a.find(x => !x.startsWith('-')) || 'http://target.local';
-    const method = (() => { const i=a.indexOf('-X'); return i>=0?a[i+1]:'GET'; })();
-    const isHead = a.includes('-I');
-    const isVerbose = a.includes('-v') || a.includes('-i');
-    const postData = (() => { const i=a.indexOf('-d'); return i>=0?a[i+1]:null; })();
-    const header = (() => { const i=a.indexOf('-H'); return i>=0?a[i+1]:null; })();
-
-    // Detect URL pattern for varied responses
-    const isLogin    = url.includes('login') || url.includes('admin');
-    const isApi      = url.includes('api') || url.includes('/v1') || url.includes('/v2');
-    const isUpload   = url.includes('upload');
-    const isRobots   = url.includes('robots');
-    const isWaec     = url.includes('waec');
-    const isPhp      = url.includes('.php');
-
-    const host = (() => { try { return new URL(url.startsWith('http')?url:'http://'+url).hostname; } catch(e){ return url; } })();
-    const date = new Date().toUTCString();
-
-    const headers = [
-      {t:`*   Trying ${host}...`,c:'dim'},
-      {t:`* Connected to ${host} port 80`,c:'dim'},
-    ];
-
-    if(isVerbose) headers.push(
-      {t:`> ${method} ${url.replace(/https?:\/\/[^/]+/,'')||'/'} HTTP/1.1`,c:'cyan'},
-      {t:`> Host: ${host}`,c:'cyan'},
-      {t:`> User-Agent: curl/8.4.0`,c:'cyan'},
-      {t:`> Accept: */*`,c:'cyan'},
-      ...(header?[{t:`> ${header}`,c:'cyan'}]:[]),
-      ...(postData?[{t:`> Content-Length: ${postData.length}`,c:'cyan'},{t:`> Content-Type: application/x-www-form-urlencoded`,c:'cyan'}]:[]),
-      {t:'>',c:'cyan'},{t:'',c:''},
-      {t:'< HTTP/1.1 200 OK',c:'green'},
-      {t:`< Date: ${date}`,c:'green'},
-      {t:'< Server: Apache/2.4.54 (Ubuntu)',c:'green'},
-      {t:'< X-Powered-By: PHP/8.1.2',c:'green'},
-      {t:'< Content-Type: text/html; charset=UTF-8',c:'green'},
-      {t:'<',c:'green'},{t:'',c:''},
-    );
-
-    if(isHead) return [
-      ...headers,
-      {t:'HTTP/1.1 200 OK',c:'green'},
-      {t:`Date: ${date}`,c:''},
-      {t:'Server: Apache/2.4.54 (Ubuntu)',c:''},
-      {t:'X-Powered-By: PHP/8.1.2',c:'yellow'},
-      {t:'X-Frame-Options: SAMEORIGIN',c:''},
-      {t:'Content-Type: text/html; charset=UTF-8',c:''},
-      {t:'Content-Length: 4823',c:''},
-      {t:'Connection: keep-alive',c:''},
-    ];
-
-    if(isRobots) return [
-      ...headers,
-      {t:'User-agent: *',c:''},
-      {t:'Disallow: /admin/',c:'red'},
-      {t:'Disallow: /backup/',c:'red'},
-      {t:'Disallow: /config.php',c:'red'},
-      {t:'Disallow: /uploads/',c:'yellow'},
-      {t:'Allow: /',c:'green'},
-    ];
-
-    if(isWaec) return [
-      ...headers,
-      {t:'HTTP/1.1 200 OK',c:'green'},
-      {t:`Date: ${date}`,c:'dim'},
-      {t:'Server: nginx/1.18.0',c:''},
-      {t:'Content-Type: application/json',c:''},
-      {t:'',c:''},
-      {t:'{',c:'cyan'},
-      {t:'  "status": "success",',c:'cyan'},
-      {t:'  "endpoint": "/uploads",',c:'cyan'},
-      {t:'  "files": [',c:'cyan'},
-      {t:'    "results_2024.pdf",',c:'green'},
-      {t:'    "candidates.csv",',c:'green'},
-      {t:'    "admin_export.zip"',c:'green'},
-      {t:'  ],',c:'cyan'},
-      {t:'  "server": "waec-portal-v2.3"',c:'cyan'},
-      {t:'}',c:'cyan'},
-    ];
-
-    if(isApi) return [
-      ...headers,
-      {t:'{',c:'cyan'},
-      {t:'  "status": "ok",',c:'cyan'},
-      {t:`  "host": "${host}",`,c:'cyan'},
-      {t:'  "version": "2.1.0",',c:'cyan'},
-      {t:'  "auth": "required",',c:'yellow'},
-      {t:'  "endpoints": ["/login","/users","/admin","/data"]',c:'cyan'},
-      {t:'}',c:'cyan'},
-    ];
-
-    if(isLogin || postData) return [
-      ...headers,
-      {t:'HTTP/1.1 302 Found',c:'yellow'},
-      {t:`Location: ${url.replace('login','dashboard')}`,c:'yellow'},
-      {t:'Set-Cookie: PHPSESSID=abc123def456; path=/; HttpOnly',c:'green'},
-      {t:'Set-Cookie: auth_token=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4ifQ.xxx; Secure',c:'green'},
-      {t:'',c:''},
-      {t:'<!-- Redirecting to dashboard -->',c:'dim'},
-    ];
-
-    if(isUpload) return [
-      ...headers,
-      {t:'HTTP/1.1 200 OK',c:'green'},
-      {t:'Content-Type: application/json',c:''},
-      {t:'',c:''},
-      {t:'{"uploads":["shell.php","backup.tar.gz","config.bak"],"writable":true}',c:'cyan'},
-    ];
-
-    // Default HTML response
-    return [
-      ...headers,
-      {t:'<!DOCTYPE html>',c:'dim'},
-      {t:`<html>`,c:'dim'},
-      {t:'<head>',c:'dim'},
-      {t:`  <title>${host} — Login</title>`,c:''},
-      {t:'</head>',c:'dim'},
-      {t:'<body>',c:'dim'},
-      {t:`  <h1>Welcome to ${host}</h1>`,c:''},
-      {t:'  <!-- TODO: remove debug mode before production -->',c:'red'},
-      {t:'  <!-- DB_PASS=s3cr3t123 -->',c:'red'},
-      {t:'  <form action="/login" method="POST">',c:''},
-      {t:'    <input name="username" type="text">',c:''},
-      {t:'    <input name="password" type="password">',c:''},
-      {t:'    <button type="submit">Login</button>',c:''},
-      {t:'  </form>',c:''},
-      {t:'</body>',c:'dim'},
-      {t:'</html>',c:'dim'},
-      {t:'',c:''},
-      {t:`* Connection #0 to host ${host} left intact`,c:'dim'},
-    ];
-  },
-
-  wget:(a)=>{
-    if(!a.length) return [
-      {t:'wget — non-interactive network downloader',c:'yellow'},
-      {t:'Usage: wget [OPTIONS] URL',c:''},
-      {t:'  -O FILE    save to filename',c:'dim'},
-      {t:'  -q         quiet mode',c:'dim'},
-      {t:'  -r         recursive download',c:'dim'},
-      {t:'  --no-check-certificate  skip SSL verify',c:'dim'},
-    ];
-    const url  = a.find(x=>!x.startsWith('-')) || 'http://target.local/file';
-    const oi   = a.indexOf('-O'); const outfile = oi>=0?a[oi+1]:url.split('/').pop()||'index.html';
-    const host = (() => { try { return new URL(url.startsWith('http')?url:'http://'+url).hostname; } catch(e){ return url; } })();
-    const size = Math.floor(Math.random()*900+100);
-    return [
-      {t:`--${new Date().toLocaleString()}--  ${url}`,c:'dim'},
-      {t:`Resolving ${host}... 192.168.1.42`,c:''},
-      {t:`Connecting to ${host}|192.168.1.42|:80... connected.`,c:''},
-      {t:`HTTP request sent, awaiting response... 200 OK`,c:'green'},
-      {t:`Length: ${size*1024} (${size}K) [application/octet-stream]`,c:''},
-      {t:`Saving to: '${outfile}'`,c:''},
-      {t:'',c:''},
-      {t:`${outfile}          100%[===================>] ${size}K  1.2MB/s    in 0.1s`,c:'green'},
-      {t:'',c:''},
-      {t:`${new Date().toLocaleString()} (1.20 MB/s) - '${outfile}' saved [${size*1024}/${size*1024}]`,c:'dim'},
-    ];
   },
 
   gobuster:(a)=>{
